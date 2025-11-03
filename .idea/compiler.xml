@@ -9,6 +9,9 @@
         <module name="ModernBoardGame" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="ModernBoardGame" target="17" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
