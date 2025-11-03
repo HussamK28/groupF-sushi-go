@@ -8,21 +8,26 @@ import java.util.Random;
 // The Rhea Agent class definition defines all the major variables for this class
 public class RHEA_Agent {
     private List<Individual_Action> population;
-    private final int populationSize = 20;
-    private final int horizonSize = 5;
-    private final int maxGenerations = 20;
+    private Individual_Action bestIndividual;
+    private HashMap<Integer, OpponentModel> opponentModels;
+    private Random random;
     private int myPlayerId;
 
-    private Individual_Action bestIndividual;
-    private Random random;
-    private HashMap<Integer, OpponentModel> opponentModels;
+    private final RHEA_Config config;
+    private final RHEA_Evaluator evaluator;
+
+    public RHEA_Agent(RHEA_Config config) {
+        this.config = config;
+        this.evaluator = new RHEA_Evaluator(config);
+        this.population = new ArrayList<>();
+        this.opponentModels = new HashMap<>();
+        this.random = new Random();
+    }
 
     // Intialise agent creates our agent and the opponent model that our agent uses
     public void initialiseAgent(AbstractGameState state) {
-        random = new Random();
-        population = new ArrayList<>();
-        opponentModels = new HashMap<>();
         myPlayerId = state.getCurrentPlayer();
+        opponentModels.clear();
 
         // For loop to add each player to a new opponent model each
         for (int i = 0; i < state.getNPlayers(); i++) {
@@ -31,16 +36,17 @@ public class RHEA_Agent {
             }
         }
 
-        // This for loop iterates through my population and adds an individual action to my population
-        for (int i = 0; i < populationSize; i++) {
-            List<Integer> actions = randomActionSequence(horizonSize, state);
-            Individual_Action individual = new Individual_Action(actions);
-            population.add(individual);
+        // Initialize random population
+        population.clear();
+        for (int i = 0; i < config.getPopulationSize(); i++) {
+            List<Integer> actions = randomActionSequence(config.getHorizon(), state);
+            population.add(new Individual_Action(actions));
         }
         // Resets opponent model after each game
         for (OpponentModel model : opponentModels.values()) {
             model.reset();
         }
+        evaluator.clearCache();
     }
 
     // This method creates a list of random action sequences
@@ -57,31 +63,30 @@ public class RHEA_Agent {
     // This function involves evolution to change its fitness rate depending on how each move is perceived
     // It iterates through each individual action in the population to evaluate the fitness 
     public void evolution(AbstractGameState state) {
-        for (int generation = 0; generation < maxGenerations; generation++) {
+        long start = System.currentTimeMillis();
+        bestIndividual = null;
+
+        while (System.currentTimeMillis() - start < config.getTimeLimitMs()) {
+            // Evaluate population using the evaluator
             for (Individual_Action ind : population) {
-                double fitness = evaluate(ind, state.copy());
+                double fitness = evaluator.evaluate(ind, state.copy(), myPlayerId, opponentModels, random);
                 ind.setFitness(fitness);
             }
-            List<Individual_Action> newPop = new ArrayList<>();
 
-            // Checks what the population size is and the child action is inherited from its parents.
-            // child action then mutates in the action space and adds child action to pop.
-            while (newPop.size() < populationSize) {
+            // Elitism
+            bestIndividual = Collections.max(population, Comparator.comparingDouble(Individual_Action::getFitness));
+
+            // Create next generation
+            List<Individual_Action> newPop = new ArrayList<>();
+            while (newPop.size() < config.getPopulationSize() - 1) {
                 Individual_Action parent = selectParent();
                 Individual_Action child = parent.clone();
                 child.mutate(state.getActionSpaceSize());
                 newPop.add(child);
             }
-            // This uses elitism to keep the best from previous generations according to their fitness
+
             newPop.add(bestIndividual.clone());
             population = newPop;
-            for (Individual_Action ind: population) {
-                double fitness = evaluate(ind, state.copy());
-                ind.setFitness(fitness);
-            }
-
-            // calculates the best individual in the population
-            bestIndividual = Collections.max(population, Comparator.comparingDouble(Individual_Action::getFitness));
         }
     }
 
@@ -111,22 +116,5 @@ public class RHEA_Agent {
         }
     }
 
-    // Evaluates each action in the simulation of the sushiGo game to predict what action is going to be performed
-    // next by our opponents
-    private double evaluate(Individual_Action ind, AbstractGameState simState) {
-        for (int action : ind.getActionSequence()) {
-            simState.performAction(simState.getCurrentPlayer(), action);
-
-            while (!simState.isTerminal() && simState.getCurrentPlayer() != myPlayerId) {
-                int opponentId = simState.getCurrentPlayer();
-                List<Integer> validActions = simState.getValidActions(opponentId);
-                OpponentModel model = opponentModels.get(opponentId);
-                int predictedAction = model.sampleAction(opponentId, validActions, random);
-                simState.performAction(opponentId, predictedAction);
-            }
-        }
-
-        double score = simState.evaluateGameForPlayer(myPlayerId);
-        return score;
-    }
 }
+
