@@ -49,7 +49,7 @@ public abstract class AbstractPlayer {
      * Then we choose one (delegating to the _getAction() implemented by the AbstractPlayer subclass)
      * Then we apply any decorators to the chosen action.
      */
-    public final AbstractAction getAction(AbstractGameState gameState, List<AbstractAction> observedActions) {
+    public AbstractAction getAction(AbstractGameState gameState, List<AbstractAction> observedActions) {
         for (IPlayerDecorator decorator : decorators) {
             observedActions = decorator.actionFilter(gameState, observedActions);
         }
