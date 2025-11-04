@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/TabletopGames/ModernBoardGame.iml" filepath="$PROJECT_DIR$/TabletopGames/ModernBoardGame.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/groupF-sushi-go.iml" filepath="$PROJECT_DIR$/.idea/groupF-sushi-go.iml" />
     </modules>
   </component>

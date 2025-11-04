@@ -10,15 +10,22 @@ import evaluation.metrics.Event;
 import evaluation.summarisers.TAGNumericStatSummary;
 import games.GameType;
 import games.pandemic.PandemicForwardModel;
+import games.sushigo.SGForwardModel;
 import gui.AbstractGUIManager;
 import gui.GUI;
 import gui.GamePanel;
+import players.PlayerParameters;
 import players.basicMCTS.BasicMCTSPlayer;
+import players.groupF.RHEA_Agent;
+import players.groupF.RHEA_Config;
+import players.groupF.RHEA_PlayerWrapper;
 import players.human.ActionController;
 import players.human.HumanConsolePlayer;
 import players.human.HumanGUIPlayer;
 import players.mcts.MCTSParams;
 import players.mcts.MCTSPlayer;
+import players.rhea.RHEAParams;
+import players.rhea.RHEAPlayer;
 import players.rmhc.RMHCParams;
 import players.rmhc.RMHCPlayer;
 import players.simple.OSLAPlayer;
@@ -696,7 +703,7 @@ public class Game {
      * and then run this class.
      */
     public static void main(String[] args) {
-        String gameType = Utils.getArg(args, "game", "Chess");
+        String gameType = Utils.getArg(args, "game", "SushiGo");
         boolean useGUI = Utils.getArg(args, "gui", true);
         int turnPause = Utils.getArg(args, "turnPause", 0);
         long seed = Utils.getArg(args, "seed", System.currentTimeMillis());
@@ -706,6 +713,16 @@ public class Game {
         ArrayList<AbstractPlayer> players = new ArrayList<>();
         players.add(new RandomPlayer());
         players.add(new RandomPlayer());
+        players.add(new RHEAPlayer(new RHEAParams()));
+
+
+        SGForwardModel forwardModel = new SGForwardModel();
+        // 2️⃣ Create your RHEA agent with the desired config and seed
+        RHEA_Config config = new RHEA_Config(); // set your hyperparameters here
+        RHEA_Agent rheaAgent = new RHEA_Agent(config, seed, forwardModel);
+        PlayerParameters params = new PlayerParameters();
+        AbstractPlayer player = new RHEA_PlayerWrapper(rheaAgent, params, "GroupF_Player");
+        players.add(player);
     //    players.add(new BasicMCTSPlayer());
 //        players.add(new OSLAPlayer());
 //        players.add(new RMHCPlayer());
