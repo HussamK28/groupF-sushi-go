@@ -1,5 +1,8 @@
 
-public class RHEA_Config {
+import players.PlayerParameters;
+
+
+public class RHEA_Config extends PlayerParameters {
     private int populationSize;
     private int horizon;
     private int generations;
@@ -32,4 +35,31 @@ public class RHEA_Config {
 
     //for JSON loading
     //public static RHEA_Config fromJSON(String filePath) { ... }
+
+    @Override
+    public void _reset() {
+        super._reset();
+        populationSize = (int) getParameterValue("populationSize");
+        horizon = (int) getParameterValue("horizon");
+        generations = (int) getParameterValue("generations");
+        mutationRate = (double) getParameterValue("mutationRate");
+    }
+
+    @Override
+    protected RHEA_Config  _copy() {
+        // All the copying is done in TunableParameters.copy()
+        // Note that any *local* changes of parameters will not be copied
+        // unless they have been 'registered' with setParameterValue("name", value)
+        return new RHEA_Config();
+    }
+
+    @Override
+    public IStateHeuristic getStateHeuristic() {
+        return AbstractGameState::getGameScore;
+    }
+
+    @Override
+    public BasicMCTSPlayer instantiate() {
+        return new BasicMCTSPlayer((BasicMCTSParams) this.copy());
+    }
 }
